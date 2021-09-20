@@ -5,7 +5,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data import Dataset
 from torch import nn
 
-
+# Class to load .cs file and convert into tensors
 class CustomDataset(Dataset):
     def __init__(self, path):
         self.data = pd.read_csv(path)
@@ -22,12 +22,16 @@ class CustomDataset(Dataset):
 
 dataset = CustomDataset("/home/surya/PycharmProjects/clevland_heart_disease/heart.csv")
 
-batch_size = 16
+# Defining Hyper parameters
+batch_size = 100
 test_split = 0.2
 shuffle_dataset = True
 random_seed = 42
 
 dataset_size = len(dataset)
+
+# Splitting Dataset into train and test.
+
 indices = list(range(dataset_size))
 split = int(np.floor(test_split * dataset_size))
 
@@ -48,7 +52,7 @@ input_size = 13
 hidden_size = [56, 56]
 output_size = 1
 
-device = "cuda"
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class Network(nn.Module):
@@ -57,14 +61,14 @@ class Network(nn.Module):
 
         self.hidden = nn.Linear(input_size, hidden_size[0])
         self.output = nn.Linear(hidden_size[1], output_size)
-        self.sigmoid = nn.Sigmoid()
+        self.softmax = nn.Softmax()
         self.relu = nn.ReLU()
 
     def forward(self, x):
         x = self.hidden(x)
         x = self.relu(x)
         x = self.output(x)
-        x = self.sigmoid(x)
+        x = self.softmax(x)
         return x
 
 
@@ -82,11 +86,9 @@ def train(dataloader, network, criterion, optimizer):
     network.train()
     for batch, (X, y) in enumerate(dataloader):
         X, y = X.to(device), y.to(device)
-
         y = y.unsqueeze(1)
         pred = network(X)
         loss = criterion(pred, y)
-
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -113,7 +115,7 @@ def test(dataloader, model, loss_fn):
     print(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
 
-epochs = 500
+epochs = 300
 for t in range(epochs):
     print(f"Epoch {t + 1}\n-------------------------------")
     train(train_loader, network, criterion, optimizer)
